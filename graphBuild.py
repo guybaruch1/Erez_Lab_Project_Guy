@@ -1,84 +1,164 @@
 import csv
 import networkx as nx
-import matplotlib.pyplot as plt
-import numpy as np
+import os
+from enum import Enum
+import pickle
 
-# the stop value in the matrix
+
+class Wavelength(Enum):
+    DELTA = 1  # 1-4 Hz
+    THETA = 2  # 4-8 Hz
+    ALPHA = 3  # 8-12 Hz
+    BETA = 4  # 12-30 Hz
+    GAMMA = 5  # 30-100 Hz
+    HIGH_GAMMA = 6  # 100+ Hz
+
+
+# Constants
 STOP = 1.0
-
-# the start of the matrix
 START = 2
-
-# the top present
 TOP = 0.1
 
+# Define subjects, states, and a dictionary to hold the graph file paths
+subjects = {"03", "06", "07"}
+states = {"rest", "film"}
+graphml_directory = "saved_graphml_files"
+metadata_map = {}  # Dictionary to hold graph file paths with key (subject, state, wavelength)
 
-# import community
-# import gudhi
-from scipy import stats
-# from sklearn import preprocessing
-# import itertools
-# import seaborn as sns
+# Ensure the GraphML directory exists
+os.makedirs(graphml_directory, exist_ok=True)
+
+# Base CSV file address
+csv_address_base = "C:/Users/guygu/Desktop/לימודים/מוח/פרקטיקום/FC_matrix_by_frequncy_bands)/FC_matrix_by_frequncy_bands/flatten_sub_"
 
 
-def build_graph_from_csv(csv_file):
-    # Create a graph
+def build_graph_from_row(row, start=START, stop=STOP):
+    """
+    Builds a graph from a single row of data.
+    """
     G = nx.Graph()
+    k = start
+    edge = float(row[k])
 
-    # Read CSV file and add nodes and edges to the graph
-    with open(csv_file, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)
-
-        # row will be the second row
-        row = next(reader)
-
-        k = START  # the column number
-
-        # init the graph
-        edge = float(row[k])
-        for num_node in range(1, 1000):
-            if edge == 1:
-                break
-            G.add_node(num_node)
-            k = k + 1
+    # Add nodes
+    for num_node in range(1, 1000):
+        if edge == stop:
+            break
+        G.add_node(num_node)
+        k += 1
+        if k < len(row):
             edge = float(row[k])
+        else:
+            break
 
-        # add the edges
-        k = START
-        for i in range(1, num_node):
+    # Add edges
+    k = start
+    for i in range(1, num_node):
+        if k >= len(row):
+            break
 
-            # end of the row
-            if k == len(row):
+        for j in range(i + 1, num_node + 2):
+            edge = float(row[k])
+            if edge == stop:
+                k += 1
                 break
-
-            for j in range(i + 1, num_node + 2):
-                edge = float(row[k])
-
-                # end of the i column in the matrix
-                if edge == STOP:
-                    k = k + 1
-                    break
-
-                # add the edge
-                G.add_edge(i, j, weight=float(edge))
-                k = k + 1
+            G.add_edge(i, j, weight=edge)
+            k += 1
     return G
 
 
-def threshold(G):
-    # sort the edges
+def threshold(G, top=TOP):
+    """Threshold the graph by keeping only the top percentage of edges."""
     sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'], reverse=True)
-    # number of edges to keep
-    num_edges_to_keep = int(len(sorted_edges) * TOP)
-    # take the top (TOP)% the largest edges
+    num_edges_to_keep = int(len(sorted_edges) * top)
     top_edges = sorted_edges[:num_edges_to_keep]
-    # create the new graph with only the top edges
-    G_top = nx.Graph()
 
+    G_top = nx.Graph()
     for edge in top_edges:
         G_top.add_node(edge[0])
         G_top.add_node(edge[1])
     G_top.add_edges_from(top_edges)
+
     return G_top
 
+
+def build_graphs_from_csv(csv_file, start=START, stop=STOP):
+    """
+    Builds a list of graphs, one per row in the CSV file.
+    Each row corresponds to a different wavelength.
+    """
+    graphs = []
+
+    # Read CSV file and build graphs for each row
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header row
+
+        # Process each row and treat it as a graph corresponding to a wavelength
+        for row in reader:
+            graph = build_graph_from_row(row, start, stop)
+            graph_top = threshold(graph)
+            graphs.append(graph_top)
+
+    return graphs
+
+
+def save_graph_to_graphml(graph, filename):
+    """Saves a graph to a GraphML file."""
+    nx.write_graphml(graph, filename)
+
+
+def save_metadata(metadata, filename='graph_metadata.pkl'):
+    """Saves metadata to a file using Pickle."""
+    with open(filename, 'wb') as file:
+        pickle.dump(metadata, file)
+
+
+def load_metadata(filename='graph_metadata.pkl'):
+    """Loads metadata from a Pickle file."""
+    with open(filename, 'rb') as file:
+        return pickle.load(file)
+
+
+def save_graphs(subjects, states, csv_address_base, graphml_directory):
+    """
+    Loops through each subject and state, builds graphs from CSV,
+    and saves them to GraphML files. Metadata is stored in a dictionary.
+    """
+    for subject in subjects:
+        for state in states:
+            # Construct CSV filename for each subject and state
+            csv_file = f"{csv_address_base}{subject}_{state}_coherence.csv"
+            graphs = build_graphs_from_csv(csv_file)
+
+            # Store each graph by its wavelength in the metadata map
+            for wavelength_enum, graph in zip(Wavelength, graphs):
+                # Create a unique filename for each graph
+                graphml_filename = f"{graphml_directory}/graph_{subject}_{state}_{wavelength_enum.name}.graphml"
+                save_graph_to_graphml(graph, graphml_filename)
+
+                # Store the file path in the metadata map
+                key = (subject, state, wavelength_enum)
+                metadata_map[key] = graphml_filename
+
+    # Save the metadata map
+    save_metadata(metadata_map)
+
+
+# Example usage: Save the graphs for each subject, state, and wavelength to GraphML files
+save_graphs(subjects, states, csv_address_base, graphml_directory)
+
+# Accessing a specific graph from the saved GraphML files
+metadata = load_metadata()  # Load the metadata
+
+subject = "03"
+state = "rest"
+wavelength = Wavelength.ALPHA
+graph_key = (subject, state, wavelength)
+
+if graph_key in metadata:
+    graph_file = metadata[graph_key]
+    loaded_graph = nx.read_graphml(graph_file)
+    print(f"Loaded graph for {subject}, {state}, {wavelength.name} from {graph_file}")
+else:
+    print(f"Graph for {subject}, {state}, {wavelength.name} not found.")
