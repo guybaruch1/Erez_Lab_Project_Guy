@@ -1,9 +1,6 @@
-import pickle
 import networkx as nx
-import numpy as np
-import community  # For modularity
+import pickle
 from shared import Wavelength
-
 
 class GraphMetrics:
     def __init__(self, metadata_file):
@@ -22,59 +19,73 @@ class GraphMetrics:
 
     def register_metrics(self):
         """
-        Registers all metric functions in a dictionary for easy management.
+        Registers all global and node-level metric functions in a dictionary.
         """
         metrics = {
+            'num_nodes': self.num_nodes,
+            'num_edges': self.num_edges,
             'degree_centrality': self.degree_centrality,
             'clustering_coefficient': self.clustering_coefficient,
             'modularity': self.modularity,
-            'global_clustering_coefficient': self.global_clustering_coefficient,
-            # We can add more metrics here as needed...
+            'global_clustering_coefficient': self.global_clustering_coefficient
         }
         return metrics
 
     def num_nodes(self, graph):
+        """
+        Returns the number of nodes (global metric).
+        """
         return graph.number_of_nodes()
 
     def num_edges(self, graph):
+        """
+        Returns the number of edges (global metric).
+        """
         return graph.number_of_edges()
 
     def degree_centrality(self, graph):
+        """
+        Returns both global and node-level degree centrality.
+        - Global: Average degree centrality.
+        - Node-level: Degree centrality for each node.
+        """
         degree_centrality = nx.degree_centrality(graph)
-        return np.mean(list(degree_centrality.values()))  # Return the average degree centrality
+        global_degree_centrality = sum(degree_centrality.values()) / len(degree_centrality)  # Global value
+        return {
+            'global': global_degree_centrality,
+            'node': degree_centrality  # Node-level values
+        }
 
     def clustering_coefficient(self, graph):
+        """
+        Returns both global and node-level clustering coefficient.
+        - Global: Average clustering coefficient.
+        - Node-level: Clustering coefficient for each node.
+        """
         clustering_coeffs = nx.clustering(graph)
-        return np.mean(list(clustering_coeffs.values()))  # Return the average clustering coefficient
+        global_clustering_coefficient = sum(clustering_coeffs.values()) / len(clustering_coeffs)  # Global value
+        return {
+            'global': global_clustering_coefficient,
+            'node': clustering_coeffs  # Node-level values
+        }
 
     def modularity(self, graph):
         """
-        Calculates the modularity using the Louvain method for community detection.
+        Returns the modularity of the graph using the Louvain method (global metric).
         """
-        if len(graph.nodes()) == 0:  # Empty graph case
-            return None
-        partition = community.best_partition(graph)  # Louvain algorithm
+        import community  # Louvain method for modularity
+        partition = community.best_partition(graph)
         return community.modularity(partition, graph)
 
     def global_clustering_coefficient(self, graph):
         """
-        Calculates the global clustering coefficient (transitivity) of the graph.
+        Returns the global clustering coefficient (transitivity) for the graph.
         """
         return nx.transitivity(graph)
 
-    def average_clustering(self, graph):
-        return nx.average_clustering(graph)
-
-    def graph_density(self, graph):
-        return nx.density(graph)
-
-    # def degree_centrality(self, graph):
-    #     return np.mean(list(nx.degree_centrality(graph).values()))
-
-
     def calculate_metrics_for_graph(self, graph):
         """
-        Iterates through the registered metrics and calculates them for a given graph.
+        Iterates through the registered metrics and calculates both global and node-level metrics for a given graph.
         """
         results = {}
         for metric_name, metric_func in self.metrics_registry.items():
@@ -86,7 +97,8 @@ class GraphMetrics:
 
     def iterate_and_calculate_metrics(self):
         """
-        Iterates over all graphs, calculates metrics, and stores them in a dictionary.
+        Iterates over all graphs, calculates metrics (both global and node-level), stores them in a dictionary,
+        and prints the results to the terminal.
         """
         all_metrics = {}
         for key, graph_file in self.metadata.items():
@@ -94,28 +106,33 @@ class GraphMetrics:
             graph = nx.read_graphml(graph_file)
             subject, state, wavelength = key
 
-            # Calculate all metrics for the current graph
+            print(f"\nProcessing graph for Subject: {subject}, State: {state}, Wavelength: {wavelength.name}")
+
+            # Calculate metrics for this graph
             metrics = self.calculate_metrics_for_graph(graph)
+
+            # Print global and node-level metrics
+            for metric_name, metric_values in metrics.items():
+                if isinstance(metric_values, dict) and 'global' in metric_values:
+                    print(f"  Metric: {metric_name}")
+                    print(f"    Global value: {metric_values['global']}")
+                    print(f"    Node-level values: {metric_values['node']}")
+                else:
+                    print(f"  Metric: {metric_name}: {metric_values}")
 
             # Store the metrics with a unique identifier (e.g., subject, state, wavelength)
             all_metrics[key] = metrics
 
-            print(f"Metrics for {subject}, {state}, {wavelength.name}: {metrics}")
-            print("-" * 40)
+        # Save the calculated metrics to a .pkl file
+        with open('graph_metrics.pkl', 'wb') as file:
+            pickle.dump(all_metrics, file)
 
-            # Save the calculated metrics to a .pkl file
-            with open('graph_metrics.pkl', 'wb') as file:
-                pickle.dump(all_metrics, file)
-
-            print("Metrics saved to 'graph_metrics.pkl'")
-
-        return all_metrics
-
+        print("\nMetrics saved to 'graph_metrics.pkl'")
 
 # Example usage of the class
 if __name__ == "__main__":
     # Initialize the class with the metadata file
     graph_metrics = GraphMetrics('graph_metadata.pkl')
 
-    # Iterate over all graphs and calculate metrics
+    # Calculate metrics and print them to the terminal
     all_metrics = graph_metrics.iterate_and_calculate_metrics()
