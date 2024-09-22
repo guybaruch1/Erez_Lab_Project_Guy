@@ -20,7 +20,8 @@ START = 2
 TOP = 0.1
 
 # Define subjects, states, and a dictionary to hold the graph file paths
-subjects = {"03", "06", "07"}
+subjects = {"03", "06", "07", "10", "13", "14", "16", "17", "18", "19", "20", "22", "24", "26", "27", "28",
+            "31", "37", "38", "40", "41", "43", "45", "46", "48", "49", "50", "54", "55", "60", "63"}
 states = {"rest", "film"}
 graphml_directory = "saved_graphml_files"
 metadata_map = {}  # Dictionary to hold graph file paths with key (subject, state, wavelength)
@@ -29,7 +30,8 @@ metadata_map = {}  # Dictionary to hold graph file paths with key (subject, stat
 os.makedirs(graphml_directory, exist_ok=True)
 
 # Base CSV file address
-csv_address_base = "C:/Users/guygu/Desktop/לימודים/מוח/פרקטיקום/FC_matrix_by_frequncy_bands)/FC_matrix_by_frequncy_bands/flatten_sub_"
+csv_address_base = "C:/Users/guygu/Desktop/לימודים/מוח/פרקטיקום/FC_matrix_by_frequncy_bands" \
+                   ")/FC_matrix_by_frequncy_bands/flatten_sub_"
 
 
 def build_graph_from_row(row, start=START, stop=STOP):
@@ -147,18 +149,3 @@ def save_graphs(subjects, states, csv_address_base, graphml_directory):
 
 # Example usage: Save the graphs for each subject, state, and wavelength to GraphML files
 save_graphs(subjects, states, csv_address_base, graphml_directory)
-
-# Accessing a specific graph from the saved GraphML files
-metadata = load_metadata()  # Load the metadata
-
-subject = "03"
-state = "rest"
-wavelength = Wavelength.ALPHA
-graph_key = (subject, state, wavelength)
-
-if graph_key in metadata:
-    graph_file = metadata[graph_key]
-    loaded_graph = nx.read_graphml(graph_file)
-    print(f"Loaded graph for {subject}, {state}, {wavelength.name} from {graph_file}")
-else:
-    print(f"Graph for {subject}, {state}, {wavelength.name} not found.")

@@ -1,7 +1,9 @@
 import pickle
 import networkx as nx
 import numpy as np
+import community  # For modularity
 from shared import Wavelength
+
 
 class GraphMetrics:
     def __init__(self, metadata_file):
@@ -23,13 +25,11 @@ class GraphMetrics:
         Registers all metric functions in a dictionary for easy management.
         """
         metrics = {
-            'num_nodes': self.num_nodes,
-            'num_edges': self.num_edges,
-            'average_clustering': self.average_clustering,
-            'graph_density': self.graph_density,
             'degree_centrality': self.degree_centrality,
-            'average_shortest_path': self.average_shortest_path_length,
-            # Add more metrics here as needed
+            'clustering_coefficient': self.clustering_coefficient,
+            'modularity': self.modularity,
+            'global_clustering_coefficient': self.global_clustering_coefficient,
+            # We can add more metrics here as needed...
         }
         return metrics
 
@@ -39,19 +39,38 @@ class GraphMetrics:
     def num_edges(self, graph):
         return graph.number_of_edges()
 
+    def degree_centrality(self, graph):
+        degree_centrality = nx.degree_centrality(graph)
+        return np.mean(list(degree_centrality.values()))  # Return the average degree centrality
+
+    def clustering_coefficient(self, graph):
+        clustering_coeffs = nx.clustering(graph)
+        return np.mean(list(clustering_coeffs.values()))  # Return the average clustering coefficient
+
+    def modularity(self, graph):
+        """
+        Calculates the modularity using the Louvain method for community detection.
+        """
+        if len(graph.nodes()) == 0:  # Empty graph case
+            return None
+        partition = community.best_partition(graph)  # Louvain algorithm
+        return community.modularity(partition, graph)
+
+    def global_clustering_coefficient(self, graph):
+        """
+        Calculates the global clustering coefficient (transitivity) of the graph.
+        """
+        return nx.transitivity(graph)
+
     def average_clustering(self, graph):
         return nx.average_clustering(graph)
 
     def graph_density(self, graph):
         return nx.density(graph)
 
-    def degree_centrality(self, graph):
-        return np.mean(list(nx.degree_centrality(graph).values()))
+    # def degree_centrality(self, graph):
+    #     return np.mean(list(nx.degree_centrality(graph).values()))
 
-    def average_shortest_path_length(self, graph):
-        if nx.is_connected(graph):
-            return nx.average_shortest_path_length(graph)
-        return float('inf')  # Return infinity for disconnected graphs
 
     def calculate_metrics_for_graph(self, graph):
         """
@@ -83,6 +102,12 @@ class GraphMetrics:
 
             print(f"Metrics for {subject}, {state}, {wavelength.name}: {metrics}")
             print("-" * 40)
+
+            # Save the calculated metrics to a .pkl file
+            with open('graph_metrics.pkl', 'wb') as file:
+                pickle.dump(all_metrics, file)
+
+            print("Metrics saved to 'graph_metrics.pkl'")
 
         return all_metrics
 
