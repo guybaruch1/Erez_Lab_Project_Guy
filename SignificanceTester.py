@@ -129,7 +129,7 @@ class SignificanceTester:
 
         return results
 
-# Example usage of the class
+
 if __name__ == "__main__":
     significance_tester = SignificanceTester('graph_metrics.pkl')
 

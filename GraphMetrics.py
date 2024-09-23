@@ -111,8 +111,8 @@ class GraphMetrics:
             # Load the graph from the GraphML file
             graph = nx.read_graphml(graph_file)
 
-            # Unpack the key, assuming wavelength is already stored as an enum
-            subject, state, wavelength = key  # wavelength should already be of type Wavelength
+            # Unpack the key
+            subject, state, wavelength = key
 
             print(f"Calculating metrics for Subject: {subject}, State: {state}, Wavelength: {wavelength.name}")
 
@@ -142,7 +142,6 @@ class GraphMetrics:
         print("\nMetrics saved to 'graph_metrics.pkl'")
 
 
-# Example usage of the class
 if __name__ == "__main__":
     graph_metrics = GraphMetrics('graph_metadata.pkl')
 

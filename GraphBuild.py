@@ -14,10 +14,10 @@ class Wavelength(Enum):
     HIGH_GAMMA = 6  # 100+ Hz
 
 
-# Constants
+# Constants for building the graphs
 STOP = 1.0
 START = 2
-TOP = 0.1
+TOP = 0.1  # Threshold
 
 # Define subjects, states, and a dictionary to hold the graph file paths
 subjects = {"03", "06", "07", "10", "13", "14", "16", "17", "18", "19", "20", "22", "24", "26", "27", "28",
@@ -36,7 +36,7 @@ csv_address_base = "C:/Users/guygu/Desktop/לימודים/מוח/פרקטיקו�
 
 def build_graph_from_row(row, start=START, stop=STOP):
     """
-    Builds a graph from a single row of data.
+    Builds a graph from a single row of data that represent wavelength.
     """
     G = nx.Graph()
     k = start
