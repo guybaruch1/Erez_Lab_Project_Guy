@@ -88,6 +88,19 @@ python MainClass.py
 - **Higher Node Clustering Coefficients (NCC) in the Alpha, Beta, Gamma, and High-Gamma Bands**, suggesting increased local connectivity in cognitive tasks.
 - No significant differences in **modularity** or **degree centrality**, implying stable brain community structure across conditions.
 
+## Screenshots
+### 1. **Graph Network Visualization**
+Visual representation of a brain connectivity network:
+![Graph Network](screenshots/p1.png)
+
+### 2. **Global Clustering Coefficient Comparison**
+Bar plot comparing GCC between rest and movie-watching states:
+![GCC Bar Plot](screenshots/p2.png)
+
+### 3. **Node Clustering Coefficient Density Plots**
+Kernel Density Estimation (KDE) plots showing NCC distributions:
+![NCC Density Plot](screenshots/p3.png)
+
 ## References
 - Kaiser, M. (2011). "A tutorial in connectome analysis: Topological and spatial features of brain networks."
 - Berezutskaya, J., et al. (2022). "Open multimodal iEEG-fMRI dataset from naturalistic stimulation."
