@@ -3,7 +3,7 @@
 ## Overview
 This project analyzes brain functional connectivity using **graph theory metrics** applied to **electrocorticography (ECoG) data**. It aims to characterize and compare brain network structures during **rest** and **movie-watching** states across six frequency bands (delta, theta, alpha, beta, gamma, and high gamma). The analysis is performed using Python, leveraging various libraries for graph construction, metric computation, statistical analysis, and visualization.
 
-[📄 Read the project report](./report_final.pdf)
+[📄 Read the project report](./report _final.pdf)
 
 ## Project Structure
 
